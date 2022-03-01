@@ -22,19 +22,22 @@ vertiq4 = iq.Vertiq2306(com4, 0, firmware="servo")
 vertiqs = [vertiq1, vertiq2, vertiq3, vertiq4]
 
 # Target Speed (rad/s)
-targetSpeed = 300
+targetSpeed = 500
 
 # How often to update motors
 time_step = .0001
 
 # Angle offset
 motorOff1 = 0
-motorOff2 = 0
+motorOff2 = 0 #-4.79
+motorOff3 = 0
+motorOff4 = 0
 
 # P I D
-P = 3
-I = 0
-D = 0
+P = 1
+I = .5
+D = .1
+# 1,1,.1
 
 class PID(object):
     def __init__(self, KP, KI, KD, target, motorOff):
@@ -49,17 +52,18 @@ class PID(object):
         self.output = 0
         self.prevTime = 0
         self.currentTime = 0
-        self.startPosition = 0
         self.motorOffset = motorOff
+        self.startTime = 0
     
     def compute(self, position):
         self.currentTime = time.time()
-        self.error = ((self.currentTime-startTime) * self.target) - position + self.startPosition + self.motorOffset
-        self.error_integral += self.error * (self.currentTime - startTime)
-        self.error_derivative = (self.error - self.error_last) / (self.currentTime - startTime)
+        self.error = ((self.currentTime-self.startTime) * self.target) - position + self.motorOffset
+        self.error_integral += self.error * (self.currentTime - self.prevTime)
+        self.error_derivative = (self.error - self.error_last) / (self.currentTime - self.prevTime)
         self.error_last = self.error
         self.output = self.kp*self.error + self.ki*self.error_integral + self.kd*self.error_derivative
 
+        self.prevTime = self.currentTime
         # Limits
         if self.output > 50:
             self.output = 50
@@ -86,8 +90,8 @@ def graph(x,y):
 
 motor1 = Motor(vertiq1, P, I, D, targetSpeed, motorOff1)
 motor2 = Motor(vertiq2, P, I, D, targetSpeed, motorOff2)
-motor3 = Motor(vertiq3, P, I, D, targetSpeed, motorOff2)
-motor4 = Motor(vertiq4, P, I, D, targetSpeed, motorOff2)
+motor3 = Motor(vertiq3, P, I, D, targetSpeed, motorOff3)
+motor4 = Motor(vertiq4, P, I, D, targetSpeed, motorOff4)
 motors = [motor1, motor2, motor3, motor4]
 
 # Set initial speed of motors
@@ -96,30 +100,35 @@ for motor in motors:
     motor.vertiq.set("multi_turn_angle_control", "trajectory_duration", 1)
 
 time.sleep(1.5)
+
+# Store start time of Program
+startTime = time.time()
+
 for motor in motors:
     motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
-    motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
+    motor.PID.startTime = startTime
+    motor.PID.prevTime = startTime
 
 # MATPLOTLIB
 poses = np.array([])
 times = np.array([])
-
-# Store start time of Program
-startTime = time.time()
-motor1.PID.startPosition = motor1.vertiq.get("multi_turn_angle_control", "obs_angular_displacement")
-
+    
 while (True):
-    for motor in motors:
-
+    for index, motor in enumerate(motors):
         obsDisplacement = motor.vertiq.get("multi_turn_angle_control", "obs_angular_displacement")
         if obsDisplacement is not None:
             velocity = motor.PID.compute(obsDisplacement)
             motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed + velocity)
-            #print(motor1.PID.error)
+
+            #print("Motor %s: Position Error: %s" % (index+1, motor.PID.error))
+
+            """
+            print(motor1.PID.error)
             
             if (time.time()-startTime > 9):
                 poses = np.append(poses, velocity)
                 times = np.append(times, motor1.PID.currentTime)
+            """
         
         #time.sleep(time_step)
 

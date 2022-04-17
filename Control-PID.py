@@ -10,10 +10,10 @@ import matplotlib.pyplot as plt
 import turtle
 
 # Setup com ports (Subject to change based on where USB is plugged in)
-com1 = iq.SerialCommunicator("/dev/cu.usbserial-14510")
-com2 = iq.SerialCommunicator("/dev/cu.usbserial-14520")
-com3 = iq.SerialCommunicator("/dev/cu.usbserial-14530")
-com4 = iq.SerialCommunicator("/dev/cu.usbserial-14540")
+com1 = iq.SerialCommunicator("/dev/cu.usbserial-14610")
+com2 = iq.SerialCommunicator("/dev/cu.usbserial-14620")
+com3 = iq.SerialCommunicator("/dev/cu.usbserial-14630")
+com4 = iq.SerialCommunicator("/dev/cu.usbserial-14640")
 
 # Initialize motors as IQ objects
 vertiq1 = iq.Vertiq2306(com1, 0, firmware="servo")
@@ -23,12 +23,12 @@ vertiq4 = iq.Vertiq2306(com4, 0, firmware="servo")
 vertiqs = [vertiq1, vertiq2, vertiq3, vertiq4]
 
 # Target Speed (rad/s)
-targetSpeed = 100
+targetSpeed = 10
 
 # Angle offset
-motorOff1 = 0 #math.pi/2
+motorOff1 = math.pi/2
 motorOff2 = 0 #-4.79
-motorOff3 = 0 #math.pi/2
+motorOff3 = math.pi/2
 motorOff4 = 0
 
 # P I D
@@ -86,9 +86,8 @@ class Motor(object):
     def get_velocity(self):
         return self.velocity
 
-def graph(x,y,z):
-    plt.plot(x, y, label="Virtual")
-    plt.plot(x, z, label="Observed")
+def graph(time1,angle1):
+    plt.plot(time1, angle1, label="Virtual")
     plt.show()
 
 motor1 = Motor(vertiq1, P, I, D, targetSpeed, motorOff1)
@@ -98,9 +97,21 @@ motor4 = Motor(vertiq4, P, I, D, targetSpeed, motorOff4)
 motors = [motor1, motor2, motor3, motor4]
 
 # Set initial speed of motors
+
 for motor in motors:
     motor.vertiq.set("multi_turn_angle_control", "trajectory_angular_displacement", 0)
     motor.vertiq.set("multi_turn_angle_control", "trajectory_duration", 1)
+
+"""
+motor1.vertiq.set("multi_turn_angle_control", "trajectory_angular_displacement", math.pi/2)
+motor1.vertiq.set("multi_turn_angle_control", "trajectory_duration", 1)
+motor2.vertiq.set("multi_turn_angle_control", "trajectory_angular_displacement", 0)
+motor2.vertiq.set("multi_turn_angle_control", "trajectory_duration", 1)
+motor3.vertiq.set("multi_turn_angle_control", "trajectory_angular_displacement", math.pi/2)
+motor3.vertiq.set("multi_turn_angle_control", "trajectory_duration", 1)
+motor4.vertiq.set("multi_turn_angle_control", "trajectory_angular_displacement", 0)
+motor4.vertiq.set("multi_turn_angle_control", "trajectory_duration", 1)
+"""
 
 time.sleep(1.5)
 
@@ -116,8 +127,11 @@ for motor in motors:
 poses = np.array([])
 poses2 = np.array([])
 times = np.array([])
+times2 = np.array([])
+
+rotor2disp = 0
     
-while (time.time() - startTime < 2):
+while (time.time() - startTime < 10):
     for index, motor in enumerate(motors):
         obsDisplacement = motor.vertiq.get("multi_turn_angle_control", "obs_angular_displacement")
         if obsDisplacement is not None:
@@ -131,10 +145,17 @@ while (time.time() - startTime < 2):
             
             #print(motor1.PID.error)
             
-            if (index == 0):
-                poses = np.append(poses, (motor1.PID.currentTime-startTime)*targetSpeed)
-                poses2 = np.append(poses2, obsDisplacement)
-                times = np.append(times, motor1.PID.currentTime-startTime)
+            if (index == 2):
+                #angle = motor.vertiq.get("brushless_drive", "obs_angle")
+                rotor2disp = obsDisplacement
+                #poses = np.append(poses, angle)
+                #times = np.append(times, motor3.PID.currentTime-startTime)
+
+            if (index == 3):
+                #angle = motor.vertiq.get("brushless_drive", "obs_angle")
+                differenceInDisp = rotor2disp - obsDisplacement
+                poses2 = np.append(poses2, differenceInDisp)
+                times2 = np.append(times2, motor4.PID.currentTime-startTime)
             
 
-graph(times, poses, poses2)
+graph(times2, poses2)

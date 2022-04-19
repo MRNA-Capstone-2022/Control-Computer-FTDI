@@ -1,12 +1,9 @@
 from curses import KEY_PPAGE
-from curses.ascii import isdigit
-import threading
 from tracemalloc import start
 from xxlimited import Null
 import iqmotion as iq
 import time
 import math
-from matplotlib import type1font
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,24 +23,7 @@ vertiq4 = iq.Vertiq2306(com4, 0, firmware="servo")
 vertiqs = [vertiq1, vertiq2, vertiq3, vertiq4]
 
 # Target Speed (rad/s)
-targetSpeed = 0
-
-def leftPairOffset(angle, d):
-    oppA = d * math.sin(angle)
-    j = abs(.53 - oppA)
-    h = math.sqrt(d*d - oppA)
-    finalAngle = math.atan(h/j)
-    print(finalAngle * math.pi / 180)
-    return finalAngle * math.pi / 180
-
-
-# Phase Angle
-theta = math.pi # (rad)
-r = 0 # (m)
-
-# Motor 1 and 2 (Motor 2 always relative to Motor 1)
-# Motor 2 will have offset 0 and Motor 1 will adjust
-#oppA = r * Math.sin()
+targetSpeed = 200
 
 # Angle offset
 motorOff1 = -.101616
@@ -52,14 +32,10 @@ motorOff3 = 0
 motorOff4 = .101616
 
 # P I D
-P = .8
-I = .28
-D = .08
+P = 1
+I = .5
+D = .1
 # 1,1,.1
-# No PID
-#P = 0
-#I = 0
-#D = 0
 
 class PID(object):
     def __init__(self, KP, KI, KD, target, motorOff):
@@ -76,11 +52,10 @@ class PID(object):
         self.currentTime = 0
         self.motorOffset = motorOff
         self.startTime = 0
-        self.displacement = 0
     
-    def compute(self, position):
-        self.updateDisplacement(time.time()) 
-        self.error = self.displacement - position + self.motorOffset
+    def compute(self, position, delay):
+        self.currentTime = time.time()
+        self.error = ((self.currentTime-self.startTime) * self.target) + delay - position + self.motorOffset
         self.error_integral += self.error * (self.currentTime - self.prevTime)
         self.error_derivative = (self.error - self.error_last) / (self.currentTime - self.prevTime)
         self.error_last = self.error
@@ -95,10 +70,8 @@ class PID(object):
             self.output = -50
         return self.output
     
-    def updateDisplacement(self, time):
-        self.currentTime = time
-        newDisplacement = (self.currentTime - self.prevTime) * self.target
-        self.displacement += newDisplacement
+    #def findOffset(self, r, theta):
+        
 
 class Motor(object):
     def __init__(self, vertiq, KP, KI, KD, target, motorOff):
@@ -106,7 +79,6 @@ class Motor(object):
         self.velocity = 0
         self.vertiq = vertiq
         self.PID = PID(KP, KI, KD, target, motorOff)
-        self.active = False
 
     def set_velocity(self, velocity):
         self.velocity = velocity
@@ -114,19 +86,8 @@ class Motor(object):
     def get_velocity(self):
         return self.velocity
 
-def motorThread(motor):
-    while motor.active:
-        #print("Motor go")
-        obsDisplacement = motor.vertiq.get("multi_turn_angle_control", "obs_angular_displacement")
-        if obsDisplacement is not None:
-            velocity = motor.PID.compute(obsDisplacement)
-            if velocity is not None:
-                motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", motor.PID.target + velocity)
-    return
-
-def graph(x,y,z):
-    plt.plot(x, y, label="Virtual")
-    plt.plot(x, z, label="Observed")
+def graph(time1,angle1):
+    plt.plot(time1, angle1, label="Virtual")
     plt.show()
 
 motor1 = Motor(vertiq1, P, I, D, targetSpeed, motorOff1)
@@ -136,61 +97,81 @@ motor4 = Motor(vertiq4, P, I, D, targetSpeed, motorOff4)
 motors = [motor1, motor2, motor3, motor4]
 
 # Set initial speed of motors
+
 for motor in motors:
     motor.vertiq.set("multi_turn_angle_control", "trajectory_angular_displacement", 0)
     motor.vertiq.set("multi_turn_angle_control", "trajectory_duration", 1)
+
+"""
+motor1.vertiq.set("multi_turn_angle_control", "trajectory_angular_displacement", math.pi/2)
+motor1.vertiq.set("multi_turn_angle_control", "trajectory_duration", 1)
+motor2.vertiq.set("multi_turn_angle_control", "trajectory_angular_displacement", 0)
+motor2.vertiq.set("multi_turn_angle_control", "trajectory_duration", 1)
+motor3.vertiq.set("multi_turn_angle_control", "trajectory_angular_displacement", math.pi/2)
+motor3.vertiq.set("multi_turn_angle_control", "trajectory_duration", 1)
+motor4.vertiq.set("multi_turn_angle_control", "trajectory_angular_displacement", 0)
+motor4.vertiq.set("multi_turn_angle_control", "trajectory_duration", 1)
+"""
 
 time.sleep(1.5)
 
 # Store start time of Program
 startTime = time.time()
 
+targetSpeed = 125
 for motor in motors:
     motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
-    motor.PID.currentTime = startTime
+    motor.PID.startTime = startTime
     motor.PID.prevTime = startTime
 
-globalDisplacement = 0
-prevUpdateTime = startTime
-prevTargetSpeed = targetSpeed
+time.sleep(5)
 
-while True:
-    for motor in motors:
-        motor.active = True
+# Store start time of Program
+startTime = time.time()
+"""
+targetSpeed = 300
+for motor in motors:
+    motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
+    motor.PID.startTime = startTime
+    motor.PID.prevTime = startTime
 
-    t1=threading.Thread(target=motorThread, args=(motor1, ))
-    t2=threading.Thread(target=motorThread, args=(motor2, ))
-    t3=threading.Thread(target=motorThread, args=(motor3, ))
-    t4=threading.Thread(target=motorThread, args=(motor4, ))
+time.sleep(5)
 
-    t1.start()
-    t2.start()
-    t3.start()
-    t4.start()
+# Store start time of Program
+startTime = time.time()
 
-    inputType = input("Enter 's' to change speed: ")
+targetSpeed = 350
+for motor in motors:
+    motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
+    motor.PID.startTime = startTime
+    motor.PID.prevTime = startTime
 
-    if not inputType.strip().isdigit():
-        if (inputType == 's'):
-            targetSpeed = float(input("Enter Target Speed: "))
+time.sleep(5)
 
-            updateTime = time.time()
-            globalDisplacement += (updateTime - prevUpdateTime) * prevTargetSpeed
+# Store start time of Program
+startTime = time.time()
+"""
 
-            for motor in motors:
-                motor.active = False
-                motor.PID.target = targetSpeed
+targetSpeed = 200
+for motor in motors:
+    motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
+    motor.PID.startTime = startTime
+    motor.PID.prevTime = startTime
 
-                motor.PID.currentTime = updateTime
-                motor.PID.prevTime = updateTime
 
-                motor.PID.displacement = globalDisplacement
-
-            prevUpdateTime = updateTime
-            prevTargetSpeed = targetSpeed
-
-            t1.join()
-            t2.join()
-            t3.join()
-            t4.join()
+finalDelay = 5*125 #+ 5*300 + 5*350
     
+while True:
+    for index, motor in enumerate(motors):
+        obsDisplacement = motor.vertiq.get("multi_turn_angle_control", "obs_angular_displacement")
+        if obsDisplacement is not None:
+            velocity = motor.PID.compute(obsDisplacement, finalDelay)
+            motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed + velocity)
+
+            #print("Motor " + str(index) + ": " + str(obsDisplacement))
+            print("Motor %s: Position Error: %s" % (index+1, motor.PID.error))
+            #if (index == 1):
+                #print("Motor %s: Obersved Position: %s " % (index+1, obsDisplacement))
+
+            
+            #print(motor1.PID.error)

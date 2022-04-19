@@ -122,6 +122,7 @@ def motorThread(motor):
             velocity = motor.PID.compute(obsDisplacement)
             if velocity is not None:
                 motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", motor.PID.target + velocity)
+        print(motor.vertiq.get("multi_turn_angle_control", "obs_angular_velocity"))
     return
 
 def graph(x,y,z):
@@ -150,14 +151,17 @@ for motor in motors:
     motor.PID.currentTime = startTime
     motor.PID.prevTime = startTime
 
+
 globalDisplacement = 0
 prevUpdateTime = startTime
 prevTargetSpeed = targetSpeed
 
-while True:
+for x in range(200):
+    targetSpeed += 1
+
     for motor in motors:
         motor.active = True
-
+    
     t1=threading.Thread(target=motorThread, args=(motor1, ))
     t2=threading.Thread(target=motorThread, args=(motor2, ))
     t3=threading.Thread(target=motorThread, args=(motor3, ))
@@ -168,29 +172,114 @@ while True:
     t3.start()
     t4.start()
 
-    inputType = input("Enter 's' to change speed: ")
+    updateTime = time.time()
+    globalDisplacement += (updateTime - prevUpdateTime) * prevTargetSpeed
 
-    if not inputType.strip().isdigit():
-        if (inputType == 's'):
-            targetSpeed = float(input("Enter Target Speed: "))
+    if (x == 199):
+        print("Done Ramping to 200")
+        time.sleep(5)
+        print("Beginning to ramp up pair")
+    else:
+        time.sleep(.05)
 
-            updateTime = time.time()
-            globalDisplacement += (updateTime - prevUpdateTime) * prevTargetSpeed
+    for motor in motors:
+        motor.active = False
+        motor.PID.target = targetSpeed
 
-            for motor in motors:
-                motor.active = False
-                motor.PID.target = targetSpeed
+        motor.PID.currentTime = updateTime
+        motor.PID.prevTime = updateTime
 
-                motor.PID.currentTime = updateTime
-                motor.PID.prevTime = updateTime
+        motor.PID.displacement = globalDisplacement
 
-                motor.PID.displacement = globalDisplacement
+    prevUpdateTime = updateTime
+    prevTargetSpeed = targetSpeed
 
-            prevUpdateTime = updateTime
-            prevTargetSpeed = targetSpeed
 
-            t1.join()
-            t2.join()
-            t3.join()
-            t4.join()
+    t1.join()
+    t2.join()
+    t3.join()
+    t4.join()
+
+motor1.active = True
+motor2.active = True
+t1=threading.Thread(target=motorThread, args=(motor1, ))
+t1.start()
+t2=threading.Thread(target=motorThread, args=(motor2, ))
+t2.start()
+
+for x in range(100):
+    targetSpeed += 1
+
+    motor3.active = True
+    motor4.active = True
     
+    t3=threading.Thread(target=motorThread, args=(motor3, ))
+    t4=threading.Thread(target=motorThread, args=(motor4, ))
+
+    t3.start()
+    t4.start()
+
+    updateTime = time.time()
+    globalDisplacement += (updateTime - prevUpdateTime) * prevTargetSpeed
+
+    if (x == 99):
+        print("Done Ramping up Pair")
+        time.sleep(5)
+        print("Beginning to Ramp down Pair")
+    else:
+        time.sleep(.1)
+
+
+    for motor in [motor3, motor4]:
+        motor.active = False
+        motor.PID.target = targetSpeed
+
+        motor.PID.currentTime = updateTime
+        motor.PID.prevTime = updateTime
+
+        motor.PID.displacement = globalDisplacement
+
+    prevUpdateTime = updateTime
+    prevTargetSpeed = targetSpeed
+
+    t3.join()
+    t4.join()
+
+for x in range(100):
+    print(x)
+    targetSpeed -= 1
+
+    motor3.active = True
+    motor4.active = True
+    
+    t3=threading.Thread(target=motorThread, args=(motor3, ))
+    t4=threading.Thread(target=motorThread, args=(motor4, ))
+
+    t3.start()
+    t4.start()
+
+    updateTime = time.time()
+    globalDisplacement += (updateTime - prevUpdateTime) * prevTargetSpeed
+
+    time.sleep(.1)
+
+    for motor in [motor3, motor4]:
+        motor.active = False
+        motor.PID.target = targetSpeed
+
+        motor.PID.currentTime = updateTime
+        motor.PID.prevTime = updateTime
+
+        motor.PID.displacement = globalDisplacement
+
+    prevUpdateTime = updateTime
+    prevTargetSpeed = targetSpeed
+
+    t3.join()
+    t4.join()
+
+motor1.active = False
+motor2.active = False
+t1.join()
+t2.join()
+print("Completed ramping down")

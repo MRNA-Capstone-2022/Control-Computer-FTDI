@@ -46,10 +46,10 @@ r = 0 # (m)
 #oppA = r * Math.sin()
 
 # Angle offset
-motorOff1 = -.101616
+motorOff1 = -.16791
 motorOff2 = 0 #-4.79
 motorOff3 = 0
-motorOff4 = .101616
+motorOff4 = .55464
 
 # P I D
 P = .8
@@ -172,7 +172,11 @@ while True:
 
     if not inputType.strip().isdigit():
         if (inputType == 's'):
-            targetSpeed = float(input("Enter Target Speed: "))
+            targetSpeed = input("Enter Target Speed: ")
+            if not targetSpeed.strip().isdigit():
+                break
+
+            targetSpeed = float(targetSpeed)
 
             updateTime = time.time()
             globalDisplacement += (updateTime - prevUpdateTime) * prevTargetSpeed

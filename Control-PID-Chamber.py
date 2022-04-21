@@ -23,19 +23,20 @@ vertiq4 = iq.Vertiq2306(com4, 0, firmware="servo")
 vertiqs = [vertiq1, vertiq2, vertiq3, vertiq4]
 
 # Target Speed (rad/s)
-targetSpeed = 200
+targetSpeed1 = 234.34
+targetSpeed2 = 336.36
 
 # Angle offset
-motorOff1 = -.101616
+motorOff1 = -.11767334
 motorOff2 = 0 #-4.79
 motorOff3 = 0
-motorOff4 = .101616
+motorOff4 = .16890137
 
 # P I D
-P = 1
-I = .5
-D = .1
-# 1,1,.1
+P = .7
+I = .4
+D = .08
+# 1,.5,.1
 
 class PID(object):
     def __init__(self, KP, KI, KD, target, motorOff):
@@ -90,10 +91,10 @@ def graph(time1,angle1):
     plt.plot(time1, angle1, label="Virtual")
     plt.show()
 
-motor1 = Motor(vertiq1, P, I, D, targetSpeed, motorOff1)
-motor2 = Motor(vertiq2, P, I, D, targetSpeed, motorOff2)
-motor3 = Motor(vertiq3, P, I, D, targetSpeed, motorOff3)
-motor4 = Motor(vertiq4, P, I, D, targetSpeed, motorOff4)
+motor1 = Motor(vertiq1, P, I, D, targetSpeed1, motorOff1)
+motor2 = Motor(vertiq2, P, I, D, targetSpeed1, motorOff2)
+motor3 = Motor(vertiq3, P, I, D, targetSpeed2, motorOff3)
+motor4 = Motor(vertiq4, P, I, D, targetSpeed2, motorOff4)
 motors = [motor1, motor2, motor3, motor4]
 
 # Set initial speed of motors
@@ -117,49 +118,81 @@ time.sleep(1.5)
 
 # Store start time of Program
 startTime = time.time()
-
-targetSpeed = 125
+print("100")
+targetSpeed = 100
 for motor in motors:
     motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
     motor.PID.startTime = startTime
     motor.PID.prevTime = startTime
 
-time.sleep(5)
+time.sleep(3)
 
 # Store start time of Program
 startTime = time.time()
-"""
-targetSpeed = 300
+print("175")
+targetSpeed = 175
 for motor in motors:
     motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
     motor.PID.startTime = startTime
     motor.PID.prevTime = startTime
 
-time.sleep(5)
+time.sleep(3)
+
+# Store start time of Program
+startTime = time.time()
+print("250")
+targetSpeed = 225
+for motor in motors:
+    motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
+    motor.PID.startTime = startTime
+    motor.PID.prevTime = startTime
+
+time.sleep(3)
+
+# Store start time of Program
+startTime = time.time()
+print("300")
+targetSpeed = 275
+for motor in motors:
+    motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
+    motor.PID.startTime = startTime
+    motor.PID.prevTime = startTime
+
+time.sleep(3)
+
+# Store start time of Program
+startTime = time.time()
+print("350")
+targetSpeed = 325
+for motor in motors:
+    motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
+    motor.PID.startTime = startTime
+    motor.PID.prevTime = startTime
+
+time.sleep(3)
+
+# Store start time of Program
+startTime = time.time()
+print("375")
+targetSpeed = 336
+for motor in motors:
+    motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
+    motor.PID.startTime = startTime
+    motor.PID.prevTime = startTime
+
+time.sleep(3)
+
+finalDelay = 3*100 + 3*175 + 3*250 + 3*300 + 3*350 + 3*375 + 3*400 + 3*425 + 3*450 + 3*465
 
 # Store start time of Program
 startTime = time.time()
 
-targetSpeed = 350
+targetSpeed = 465.69
 for motor in motors:
     motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
     motor.PID.startTime = startTime
     motor.PID.prevTime = startTime
 
-time.sleep(5)
-
-# Store start time of Program
-startTime = time.time()
-"""
-
-targetSpeed = 200
-for motor in motors:
-    motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed)
-    motor.PID.startTime = startTime
-    motor.PID.prevTime = startTime
-
-
-finalDelay = 5*125 #+ 5*300 + 5*350
     
 while True:
     for index, motor in enumerate(motors):
@@ -169,7 +202,7 @@ while True:
             motor.vertiq.set("multi_turn_angle_control", "ctrl_velocity", targetSpeed + velocity)
 
             #print("Motor " + str(index) + ": " + str(obsDisplacement))
-            print("Motor %s: Position Error: %s" % (index+1, motor.PID.error))
+            # print("Motor %s: Position Error: %s" % (index+1, motor.PID.error))
             #if (index == 1):
                 #print("Motor %s: Obersved Position: %s " % (index+1, obsDisplacement))
 

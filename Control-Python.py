@@ -3,10 +3,10 @@ import time
 import math
 
 # Setup com ports (Subject to change based on where USB is plugged in)
-com1 = iq.SerialCommunicator("/dev/cu.usbserial-14110")
-com2 = iq.SerialCommunicator("/dev/cu.usbserial-14120")
-com3 = iq.SerialCommunicator("/dev/cu.usbserial-14130")
-com4 = iq.SerialCommunicator("/dev/cu.usbserial-14140")
+com1 = iq.SerialCommunicator("/dev/cu.usbserial-144410")
+com2 = iq.SerialCommunicator("/dev/cu.usbserial-144420")
+com3 = iq.SerialCommunicator("/dev/cu.usbserial-144430")
+com4 = iq.SerialCommunicator("/dev/cu.usbserial-144440")
 
 # VARIABLES
 elapsedTime = 0.0, time = 0.0, timePrev = 0.0

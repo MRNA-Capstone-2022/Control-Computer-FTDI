@@ -10,10 +10,10 @@ import matplotlib.pyplot as plt
 import turtle
 
 # Setup com ports (Subject to change based on where USB is plugged in)
-com1 = iq.SerialCommunicator("/dev/cu.usbserial-14410")
-com2 = iq.SerialCommunicator("/dev/cu.usbserial-14420")
-com3 = iq.SerialCommunicator("/dev/cu.usbserial-14430")
-com4 = iq.SerialCommunicator("/dev/cu.usbserial-14440")
+com1 = iq.SerialCommunicator("/dev/cu.usbserial-14110")
+com2 = iq.SerialCommunicator("/dev/cu.usbserial-14120")
+com3 = iq.SerialCommunicator("/dev/cu.usbserial-14130")
+com4 = iq.SerialCommunicator("/dev/cu.usbserial-14140")
 
 # Initialize motors as IQ objects
 vertiq1 = iq.Vertiq2306(com1, 0, firmware="servo")
@@ -27,10 +27,10 @@ targetSpeed1 = 234.34
 targetSpeed2 = 336.36
 
 # Angle offset
-motorOff1 = -.11767334
+motorOff1 = 0 # -.11767334
 motorOff2 = 0 #-4.79
 motorOff3 = 0
-motorOff4 = .16890137
+motorOff4 = 0 # .16890137
 
 # P I D
 P = .7

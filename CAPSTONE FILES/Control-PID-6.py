@@ -33,10 +33,10 @@ targetSpeed = 0
 #oppA = r * Math.sin()
 
 # Angle offset
-motorOff1 = 0
+motorOff1 = -math.pi/2
 motorOff2 = 0 #-4.79
 motorOff3 = 0
-motorOff4 = 0
+motorOff4 = math.pi/2
 
 # P I D
 P = .8
@@ -47,6 +47,7 @@ D = .08
 #P = 0
 #I = 0
 #D = 0
+
 
 class PID(object):
     def __init__(self, KP, KI, KD, target, motorOff):
@@ -75,13 +76,6 @@ class PID(object):
 
         self.prevTime = self.currentTime
         
-        # Limits
-        if self.output > 50:
-            self.output = 50
-        if self.output < -50:
-            self.output = -50
-        return self.output
-    
     def updateDisplacement(self, time):
         self.currentTime = time
         newDisplacement = (self.currentTime - self.prevTime) * self.target
@@ -141,9 +135,18 @@ globalDisplacement = 0
 prevUpdateTime = startTime
 prevTargetSpeed = targetSpeed
 
+updateThreads = True
+
 while True:
     for motor in motors:
         motor.active = True
+
+    print(motorOff1)
+    
+    motor1.PID.motorOffset = motorOff1
+    motor2.PID.motorOffset = motorOff2
+    motor3.PID.motorOffset = motorOff3
+    motor4.PID.motorOffset = motorOff4
 
     t1=threading.Thread(target=motorThread, args=(motor1, ))
     t2=threading.Thread(target=motorThread, args=(motor2, ))
@@ -155,15 +158,13 @@ while True:
     t3.start()
     t4.start()
 
-    inputType = input("Enter 's' to change speed: ")
+    print(motor1.PID.motorOffset)
+
+    inputType = input("Enter 's' to change speed. 'a' to change angle: ")
 
     if not inputType.strip().isdigit():
         if (inputType == 's'):
-            targetSpeed = input("Enter Target Speed: ")
-            if not targetSpeed.strip().isdigit():
-                break
-
-            targetSpeed = float(targetSpeed)
+            targetSpeed = float(input("Enter Target Speed: "))
 
             updateTime = time.time()
             globalDisplacement += (updateTime - prevUpdateTime) * prevTargetSpeed
@@ -185,10 +186,29 @@ while True:
             t3.join()
             t4.join()
             
-        elif (inputType == "a1"):
-            targetOffset = float(input("Enter Target Speed: "))
-            motorOff1 = targetOffset * -1
-        elif (inputType == "a2"):
-            targetOffset = float(input("Enter Target Speed: "))
-            motorOff4 = targetOffset
+        elif (inputType == "a"):
+            targetOffsetA = float(input("Enter Target Angle for Pair A: "))
+            motorOff1 = targetOffsetA * -1
+            targetOffsetB = float(input("Enter Target Speed for Pair B: "))
+            motorOff4 = targetOffsetB
+
+            updateTime = time.time()
+            globalDisplacement += (updateTime - prevUpdateTime) * prevTargetSpeed
+
+            for motor in motors:
+                motor.active = False
+                motor.PID.target = targetSpeed
+
+                motor.PID.currentTime = updateTime
+                motor.PID.prevTime = updateTime
+
+                motor.PID.displacement = globalDisplacement
+
+            prevUpdateTime = updateTime
+            prevTargetSpeed = targetSpeed
+
+            t1.join()
+            t2.join()
+            t3.join()
+            t4.join()
     

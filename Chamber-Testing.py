@@ -41,7 +41,7 @@ time.sleep(1)
 
 
 # 207.66 TARGET SEA LEVEL
-for x in range(467):
+for x in range(100):
     for index, vertiq in enumerate(vertiqs):
         vertiq.set("multi_turn_angle_control", "ctrl_velocity", x)
     time.sleep(.02)
@@ -50,5 +50,5 @@ print("Ready")
 while True:
     for index, vertiq in enumerate(vertiqs):
         randDiff = random.uniform(0, 3)
-        vertiq.set("multi_turn_angle_control", "ctrl_velocity", 467.05 - 1.5 + randDiff)
+        vertiq.set("multi_turn_angle_control", "ctrl_velocity", 100 - 1.5 + randDiff)
     time.sleep(.3)
